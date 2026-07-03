@@ -1,0 +1,1 @@
+TRUNCATE TABLE "WeeklyGrade", "MonthlyExam", "TermFinalExam", "ActivityScore", "Student", "ClassFile", "TeacherYearFile", "AttendanceRecord", "ShoonStudent", "ShoonClassFile", "MonthLock", "TeacherAttendance", "TeacherEvaluation", "AcademicTerm", "AcademicYear", "User" RESTART IDENTITY CASCADE;

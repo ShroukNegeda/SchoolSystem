@@ -1,0 +1,18 @@
+Cleared: weeklyGrade
+Cleared: monthlyExam
+Cleared: termFinalExam
+Cleared: activityScore
+Cleared: student
+Cleared: classFile
+Cleared: teacherYearFile
+Cleared: attendanceRecord
+Cleared: shoonStudent
+Cleared: shoonClassFile
+Cleared: monthLock
+Cleared: teacherAttendance
+Cleared: teacherEvaluation
+Cleared: academicTerm
+Cleared: academicYear
+Cleared: user
+Created admin: ayman@gmail.com
+Total users: 1

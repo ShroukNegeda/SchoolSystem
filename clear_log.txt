@@ -1,0 +1,34 @@
+OK: weeklyGrade
+OK: monthlyExam
+OK: termFinalExam
+OK: activityScore
+OK: student
+OK: classFile
+OK: teacherYearFile
+OK: attendanceRecord
+OK: shoonStudent
+OK: shoonClassFile
+OK: monthLock
+OK: teacherAttendance
+OK: teacherEvaluation
+OK: academicTerm
+OK: academicYear
+OK: user
+DONE
+OK weeklyGrade: 0
+OK monthlyExam: 0
+OK termFinalExam: 0
+OK activityScore: 0
+OK student: 0
+OK classFile: 0
+OK teacherYearFile: 0
+OK attendanceRecord: 0
+OK shoonStudent: 0
+OK shoonClassFile: 0
+OK monthLock: 0
+OK teacherAttendance: 0
+OK teacherEvaluation: 0
+OK academicTerm: 0
+OK academicYear: 0
+OK user: 0
+Users after clear: 0

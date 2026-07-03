@@ -1,0 +1,269 @@
+// ====================================================================
+// مخطط قاعدة البيانات - نظام إدارة المدرسة
+// ====================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------- الأدوار والثوابت -------------------------
+
+enum Role {
+  TEACHER // مدرس مادة
+  SHOON   // شؤون الطلبة
+  ADMIN   // المدير
+}
+
+enum SubjectName {
+  ARABIC    // عربى
+  ENGLISH   // انجليزى
+  STUDIES   // دراسات
+  MATH      // رياضة
+  SCIENCE   // علوم
+  ART       // تربية فنية
+  RELIGION  // دين
+  COMPUTER  // حاسب آلى
+  ACTIVITY  // نشاط
+}
+
+enum Grade {
+  G1 // الصف الأول الإعدادى
+  G2 // الصف الثانى الإعدادى
+  G3 // الصف الثالث الإعدادى
+}
+
+enum Term {
+  TERM1 // الترم الأول (امتحان نص العام)
+  TERM2 // الترم الثانى (امتحان آخر العام)
+}
+
+enum AttendanceStatus {
+  PRESENT            // حاضر
+  EXCUSED_ABSENCE    // غائب بعذر
+  UNEXCUSED_ABSENCE  // غائب بدون عذر
+}
+
+enum ExamMonth {
+  OCTOBER
+  NOVEMBER
+}
+
+// --------------------------- السنة الدراسية ---------------------------
+// عند إنشاء سنة جديدة من صفحة admin يتم إنشاء سجل هنا مع الترمين تلقائياً
+
+model AcademicYear {
+  id           String   @id @default(cuid())
+  year         String   @unique // مثال: "2026/2027"
+  createdAt    DateTime @default(now())
+
+  terms AcademicTerm[]
+}
+
+model AcademicTerm {
+  id             String       @id @default(cuid())
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  term           Term         // TERM1 أو TERM2
+
+  @@unique([academicYearId, term])
+}
+
+// ------------------------------ المستخدمون ------------------------------
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String   @unique
+  password  String
+  role      Role
+  subject   SubjectName? // فقط للمدرس
+  createdAt DateTime @default(now())
+
+  classFiles       ClassFile[]
+  teacherYearFiles TeacherYearFile[]
+  shoonFiles       ShoonClassFile[]
+  attendanceLogs   TeacherAttendance[]
+  evaluations      TeacherEvaluation[]
+}
+
+// --------------------------- ملفات درجات المدرسين ---------------------------
+// كل ملف خاص بصف/فصل/مادة/سنة دراسية/ترم معين. عند بدء ترم أو سنة جديدة
+// يتم إنشاء صف جديد هنا (والقديم يفضل محفوظ كما هو بدون أى تعديل أو حذف).
+
+model TeacherYearFile {
+  id           String   @id @default(cuid())
+  teacherId    String
+  teacher      User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  academicYear String
+  createdAt    DateTime @default(now())
+
+  @@unique([teacherId, academicYear])
+}
+
+model ClassFile {
+  id           String   @id @default(cuid())
+  teacherId    String
+  teacher      User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  grade        Grade
+  section      Int      // من 1 إلى 7
+  subject      SubjectName
+  academicYear String   // مثال: "2026/2027"
+  term         Term     @default(TERM1)
+  createdAt    DateTime @default(now())
+
+  students  Student[]
+
+  @@unique([teacherId, grade, section, academicYear, term])
+}
+
+model Student {
+  id          String   @id @default(cuid())
+  classFileId String
+  classFile   ClassFile @relation(fields: [classFileId], references: [id], onDelete: Cascade)
+  name        String
+  order       Int      @default(0)
+
+  weeklyGrades   WeeklyGrade[]
+  monthlyExams   MonthlyExam[]
+  termFinalExam  TermFinalExam?
+  activityScore  ActivityScore?
+}
+
+// تقييم أسبوعى: كراسة /10 - تقييم /20 - انضباط /10 - واجب /10
+model WeeklyGrade {
+  id         String  @id @default(cuid())
+  studentId  String
+  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  weekNumber Int     // 1 إلى 12 فى الترم
+  notebook   Float   @default(0) // كراسة
+  evaluation Float   @default(0) // تقييم
+  discipline Float   @default(0) // انضباط
+  homework   Float   @default(0) // واجب
+
+  @@unique([studentId, weekNumber])
+}
+
+// امتحان شهر : أكتوبر / نوفمبر - من 15 درجة
+model MonthlyExam {
+  id        String    @id @default(cuid())
+  studentId String
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  month     ExamMonth
+  score     Float     @default(0)
+
+  @@unique([studentId, month])
+}
+
+// امتحان آخر الترم: نص العام فى الترم الأول، آخر العام فى الترم الثانى - من 30 درجة
+model TermFinalExam {
+  id        String  @id @default(cuid())
+  studentId String  @unique
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score     Float   @default(0)
+}
+
+// درجة النشاط فقط - من 100 درجة فى آخر الترم
+model ActivityScore {
+  id        String  @id @default(cuid())
+  studentId String  @unique
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score     Float   @default(0)
+}
+
+// --------------------------- ملفات شؤون الطلبة (الغياب) ---------------------------
+
+model ShoonClassFile {
+  id           String   @id @default(cuid())
+  shoonId      String
+  shoon        User     @relation(fields: [shoonId], references: [id], onDelete: Cascade)
+  grade        Grade
+  section      Int
+  academicYear String   // مثال: "2026/2027"
+  term         Term     @default(TERM1)
+  createdAt    DateTime @default(now())
+
+  students  ShoonStudent[]
+
+  @@unique([shoonId, grade, section, academicYear, term])
+}
+
+model ShoonStudent {
+  id               String   @id @default(cuid())
+  shoonClassFileId String
+  shoonClassFile   ShoonClassFile @relation(fields: [shoonClassFileId], references: [id], onDelete: Cascade)
+  name             String
+  order            Int      @default(0)
+
+  attendance AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id             String            @id @default(cuid())
+  shoonStudentId String
+  shoonStudent   ShoonStudent      @relation(fields: [shoonStudentId], references: [id], onDelete: Cascade)
+  weekNumber     Int
+  status         AttendanceStatus  @default(PRESENT)
+
+  @@unique([shoonStudentId, weekNumber])
+}
+
+// قفل الكشف نهاية كل شهر بواسطة المدير — مستقل عن أى ملف شؤون بعينه
+model MonthLock {
+  id           String   @id @default(cuid())
+  grade        Grade
+  section      Int
+  academicYear String
+  term         Term
+  monthLabel   String   // مثال: "الشهر الأول"
+  lockedAt     DateTime @default(now())
+
+  @@unique([grade, section, academicYear, term, monthLabel])
+}
+
+// --------------------------- حضور وغياب المدرسين (يديره المدير) ---------------------------
+
+model TeacherAttendance {
+  id           String            @id @default(cuid())
+  teacherId    String
+  teacher      User              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  academicYear String
+  term         Term              @default(TERM1)
+  weekNumber   Int
+  status       AttendanceStatus  @default(PRESENT)
+
+  @@unique([teacherId, academicYear, term, weekNumber])
+}
+
+// --------------------------- تقييم أداء المدرسين (يديره المدير) ---------------------------
+
+model TeacherEvaluation {
+  id                  String  @id @default(cuid())
+  teacherId           String
+  teacher             User    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  academicYear        String
+  term                Term    @default(TERM1)
+  weekNumber          Int
+  teachingMethod      Float   @default(0) // طريقة الشرح /7
+  curriculumDist      Float   @default(0) // توزيع المنهج /6
+  personalHygiene     Float   @default(0) // النظافة الشخصية /6
+  classManagement     Float   @default(0) // إدارة الحصة /7
+  distribution        Float   @default(0) // التوزيع والابتكار /7
+  aids                Float   @default(0) // الوسائل المعينة /6
+  accompanyingActivity Float  @default(0) // النشاط المصاحب /6
+  studentInteraction  Float   @default(0) // تفاعل الطلاب /7
+  classControl        Float   @default(0) // السيطرة على الفصل /7
+  individualDiff      Float   @default(0) // الفروق الفردية /7
+  prepBook            Float   @default(0) // دفتر التحضير /6
+  gradesBook          Float   @default(0) // دفتر الدرجات /7
+  studentBook         Float   @default(0) // كراسة الطالب /7
+  evaluations         Float   @default(0) // التقييمات /7
+  weakStudents        Float   @default(0) // الطلاب الضعاف /7
+
+  @@unique([teacherId, academicYear, term, weekNumber])
+}
