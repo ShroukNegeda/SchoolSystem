@@ -1,11 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-  );
-}
-
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+
+if (!process.env.DATABASE_URL) {
+  console.warn("DATABASE_URL is not set. Prisma will fail until it is configured.");
+}
 
 export const prisma =
   globalForPrisma.prisma ??

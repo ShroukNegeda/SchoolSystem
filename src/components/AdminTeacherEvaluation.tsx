@@ -24,13 +24,16 @@ const FIELDS: { key: string; label: string; max: number }[] = [
   { key: "weakStudents",         label: "الطلاب الضعاف",           max: 7 },
 ];
 
-type EvalRecord = Record<string, number>;
+type EvalRecord = Record<string, number | string | null | undefined>;
 
 type Teacher = {
   id: string;
   name: string;
   subject: SubjectName | null;
-  evaluations: ({ weekNumber: number } & EvalRecord)[];
+  evaluations: Array<{
+    weekNumber: number;
+    [key: string]: number | string | null | undefined;
+  }>;
 };
 
 export default function AdminTeacherEvaluation({
@@ -107,7 +110,7 @@ export default function AdminTeacherEvaluation({
           <tbody className="divide-y divide-[var(--color-border)]">
             {teachers.map((teacher) => {
               const ev = teacher.evaluations.find((e) => e.weekNumber === week) ?? {} as EvalRecord;
-              const total = FIELDS.reduce((sum, f) => sum + (ev[f.key] ?? 0), 0);
+              const total = FIELDS.reduce((sum, f) => sum + Number(ev[f.key] ?? 0), 0);
               return (
                 <tr key={teacher.id} className="hover:bg-gray-50/50">
                   <td className="px-3 py-2 font-bold sticky right-0 bg-white z-10 whitespace-nowrap shadow-[1px_0_0_0_var(--color-border)]">
