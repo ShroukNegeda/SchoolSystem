@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } , redirect from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-session";
 import DashboardShell from "@/components/DashboardShell";
